@@ -1,0 +1,17 @@
+{
+  "name": "aarogyasangam",
+  "version": "1.0.0",
+  "description": "Software designed to increase ease of patient appointment scheduling and increase doctor availability by providing patients the ability to book through SMS.  Submission to HackoFiesta 6.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "nodemon ./Backend/server.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.21.2",
+    "nodemon": "^3.1.9"
+  }
+}
