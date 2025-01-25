@@ -1,8 +1,13 @@
 const express = require('express');
 const apiRouter = require('./Routers/apiRouter');
+const connectDB = require('./db');
+require('dotenv').config();
 
-const PORT = 5000;
+const PORT = process.env.PORT || 5000;
 const app = express();
+
+// Connecct to MongoDB
+connectDB();
 
 // Middleware
 app.use(express.json());

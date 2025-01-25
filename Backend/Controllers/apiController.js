@@ -1,21 +1,75 @@
-const getOneMedicine = (req, res) => {
-    res.send("Here is the medicine detail");
+const { ObjectId } = require('bson');
+const medicine = require('../schemas');
+
+const getOneMedicine = async (req, res) => {
+    const { id } = req.params;
+    try {
+        const med = await medicine.findById(id);
+        if (!med) {
+            return res.status(404).json({ success: false, message: "No Medicine Found!"});
+        }
+        return res.status(200).json({ success: true, data: med });
+    }
+    catch (err) {
+        return res.status(500).json({ success: false, message: err.message });
+    }
 };
 
-const getAllMedicine = (req, res) => {
-    res.send("Here are all the medicine");
+const getAllMedicine = async (req, res) => {
+    try {
+        const meds = await medicine.find();
+        return res.status(200).json({ success: true, data: meds });
+    }
+    catch (err) {
+        return res.status(500).json({ success: false, message: err.message });
+    }
 };
 
-const addMedicine = (req, res) => {
-    res.send("Medicine created successfully");
+const addMedicine = async (req, res) => {
+    const { name, quantity, batchno, expiry, price } = req.body;
+    if (!name || !quantity || !batchno || !expiry || !price) {
+        return res.status(400).json({ success: false, message: "Invalid Details!" });
+    }
+    try {
+        id = new ObjectId();
+        const newMedicine = new medicine({ _id: id, _name: name, _quantity: quantity, _batchno: batchno, _expiry: expiry, _price: price });
+        await newMedicine.save();
+        return res.status(201).json({ success: true, message: "Medicine Added!", id: id });
+    }
+    catch (err) {
+        return res.status(500).json({ success: false, message: err.message });
+    }
 };
 
-const deleteMedicine = (req, res) => {
-    res.send("Deleted Medicine!");
+const deleteMedicine = async (req, res) => {
+    const { id } = req.body;
+    try {
+        const med = await medicine.findByIdAndDelete(id);
+        if (!med) {
+            return res.status(404).json({ success: false, message: "No Medicine Found!" });
+        }
+        return res.status(200).json({ success: true, message: "Medicine Deleted!" });
+    }
+    catch (err) {
+        return res.status(500).json({ success: false, message: err.message });
+    }
 };
 
 const updateMedicine = (req, res) => {
-    res.send('Updated Medicine!');
+    const { id, name, quantity, batchno, expiry, price } = req.body;
+    if (!name || !quantity || !batchno || !expiry || !price) {
+        return res.status(400).json({ success: false, message: "Invalid Details!" });
+    }
+    try {
+        const med = medicine.findByIdAndUpdate(id, { _name: name, _quantity: quantity, _batchno: batchno, _expiry: expiry, _price: price });
+        if (!med) {
+            return res.status(404).json({ success: false, message: "No Medicine Found!" });
+        }
+        return res.status(200).json({ success: true, message: "Medicine Updated!" });
+    }
+    catch (err) {
+        return res.status(500).json({ success: false, message: err.message });
+    }
 };
 
 module.exports = { getOneMedicine, getAllMedicine, addMedicine, deleteMedicine, updateMedicine };
