@@ -26,13 +26,13 @@ const getAllMedicine = async (req, res) => {
 };
 
 const addMedicine = async (req, res) => {
-    const { name, quantity, batchno, expiry, price } = req.body;
-    if (!name || !quantity || !batchno || !expiry || !price) {
+    const { name, quantity, batchno, expiry } = req.body;
+    if (!name || !quantity || !batchno || !expiry) {
         return res.status(400).json({ success: false, message: "Invalid Details!" });
     }
     try {
         id = new ObjectId();
-        const newMedicine = new medicine({ _id: id, _name: name, _quantity: quantity, _batchno: batchno, _expiry: expiry, _price: price });
+        const newMedicine = new medicine({ _id: id, _name: name, _quantity: quantity, _batchno: batchno, _expiry: expiry });
         await newMedicine.save();
         return res.status(201).json({ success: true, message: "Medicine Added!", id: id });
     }
@@ -56,12 +56,12 @@ const deleteMedicine = async (req, res) => {
 };
 
 const updateMedicine = (req, res) => {
-    const { id, name, quantity, batchno, expiry, price } = req.body;
-    if (!name || !quantity || !batchno || !expiry || !price) {
+    const { id, name, quantity, batchno, expiry } = req.body;
+    if (!name || !quantity || !batchno || !expiry) {
         return res.status(400).json({ success: false, message: "Invalid Details!" });
     }
     try {
-        const med = medicine.findByIdAndUpdate(id, { _name: name, _quantity: quantity, _batchno: batchno, _expiry: expiry, _price: price });
+        const med = medicine.findByIdAndUpdate(id, { _name: name, _quantity: quantity, _batchno: batchno, _expiry: expiry });
         if (!med) {
             return res.status(404).json({ success: false, message: "No Medicine Found!" });
         }

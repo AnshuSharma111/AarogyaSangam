@@ -7,7 +7,6 @@ const medicineSchema = new mongoose.Schema({
   _quantity: { type: Int32, required: true },
   _batchno: {type: String, required: true },
   _expiry: {type: Date, required: true },
-  _price: {type: Int32, required: true}
 });
 
 const medicine = mongoose.model('User', medicineSchema);
