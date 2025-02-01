@@ -1,14 +1,18 @@
-const { Int32, ObjectId } = require('bson');
+const { Int32 } = require('bson');
 const mongoose = require('mongoose');
 
 const medicineSchema = new mongoose.Schema({
-  _id: { type: ObjectId, required: true, unique: true },
   _name: { type: String, required: true },
   _quantity: { type: Int32, required: true },
   _batchno: {type: String, required: true },
   _expiry: {type: Date, required: true },
 });
 
-const medicine = mongoose.model('User', medicineSchema);
+const userSchema = new mongoose.Schema({
+  _phoneno: { type: String, required: true }
+})
 
-module.exports = medicine;
+const Medicine = mongoose.model('medicine', medicineSchema);
+const User = mongoose.model('user', userSchema);
+
+module.exports = { Medicine, User };
