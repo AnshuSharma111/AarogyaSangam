@@ -26,10 +26,5 @@ const send = async (req, res) => {
         return res.status(500).json({ success: false, message: 'Internal Server Error' });
     }
 }
-// POST method for receiving message
-const receive = (req, res) => {
-    console.log(req.body);
-    return res.status(200).json({ success: true, message: 'Message received successfully' });
-}
 
 module.exports = { send, receive };
