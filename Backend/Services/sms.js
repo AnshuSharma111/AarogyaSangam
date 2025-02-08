@@ -41,20 +41,19 @@ const receive = async (req, res) => {
 
     if (!req.body) {
         console.log("Invalid receive Request!"); // Log error
-
         return res.status(400).json({ success: false, message: "No Body" });
     }
 
     if (content == "0") { // 0 is the code to book an appointment
         console.log("Appointment booking request received"); // Log the request
 
-        smsEvents.emit("book", { from, content }); // Emit event to book an appointment
+        smsEvents.emit("register", { from }); // Emit event to book an appointment
         return res.status(200).json({ success: true, message: "Appointment booking request received" });
     }
     else if (content == "1") { // 1 is the code to confirm appointment
-        console.log("Appointment confirmation received"); // Log the request
+        console.log("Appointment confirmation request received"); // Log the request
 
-        smsEvents.emit("confirm", req.body); // Emit event to confirm an appointment
+        smsEvents.emit("confirm", { from }); // Emit event to confirm an appointment
         return res.status(200).json({ success: true, message: "Appointment confirmation request received" });
     }
     else {

@@ -17,6 +17,7 @@
     "mongoose": "^8.9.5",
     "node-cron": "^3.0.3",
     "nodemon": "^3.1.9",
-    "twilio": "^5.4.2"
+    "twilio": "^5.4.2",
+    "winston": "^3.17.0"
   }
 }
