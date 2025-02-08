@@ -37,7 +37,7 @@ const addMedicine = async (req, res) => {
         if (!name || !quantity || !batchno || !expiry) {
             return res.status(400).json({ success: false, message: "Invalid Details!" });
         }
-        const newMedicine = new  Medicine({ name: name, quantity: quantity, batchno: batchno, expiry: expiry });
+        const newMedicine = new Medicine({ name: name, quantity: quantity, batchno: batchno, expiry: expiry });
         await newMedicine.save();
         return res.status(201).json({ success: true, message: "Medicine Added!", id: newMedicine._id });
     }
