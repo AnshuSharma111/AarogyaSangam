@@ -20,7 +20,7 @@ const logger = winston.createLogger({
 });
 
 // Middleware
-app.use(cors({ origin: "*" }));
+app.use(cors());
 app.use(express.json());
 app.use('/api/medicine', medicineRouter); // Router for all medicine API calls
 
@@ -35,7 +35,7 @@ app.use('/api/sms', smsRouter); // Router for SMS API calls
 
 // test route
 app.get("/", (req, res) => {
-    res.json({ message: "Aarogya Sangam is up and running" });
+    res.send("<h1>Aarogya Sangam is up and running</h1>");
 });
 
 // Non-existent route handler
