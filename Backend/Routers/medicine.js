@@ -1,19 +1,23 @@
 const express = require('express');
-
 const router = express.Router();
-
-// get medicine api controller
 const medicineController = require('../Controllers/medicine');
 
-// set up routes
 router.route('/:id')
-.get(medicineController.getOneMedicine)
-.delete(medicineController.deleteMedicine)
-.patch(medicineController.updateMedicine);
+    .get(medicineController.getOneMedicine)
+    .delete(async (req, res, next) => {
+        await medicineController.deleteMedicine(req, res, next);
+        req.broadcastInventoryUpdate(); // Trigger WebSocket update
+    })
+    .patch(async (req, res, next) => {
+        await medicineController.updateMedicine(req, res, next);
+        req.broadcastInventoryUpdate(); // Trigger WebSocket update
+    });
 
 router.route('/')
-.get(medicineController.getAllMedicine)
-.post(medicineController.addMedicine)
+    .get(medicineController.getAllMedicine)
+    .post(async (req, res, next) => {
+        await medicineController.addMedicine(req, res, next);
+        req.broadcastInventoryUpdate(); // Trigger WebSocket update
+    });
 
-// export router
 module.exports = router;

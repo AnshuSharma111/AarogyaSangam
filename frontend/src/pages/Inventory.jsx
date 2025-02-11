@@ -1,46 +1,105 @@
-import React from 'react';
-import Card from '../components/ui/card';
+import React, { useState, useEffect, useRef } from 'react';
 
 const Inventory = () => {
-  const inventoryData = [
-    { id: 1, name: 'Paracetamol', medId: 'MED123', stock: 50, expiry: '2025-03-15' },
-    { id: 2, name: 'Ibuprofen', medId: 'MED124', stock: 30, expiry: '2024-11-10' },
-    { id: 3, name: 'Amoxicillin', medId: 'MED125', stock: 20, expiry: '2025-01-20' },
-    { id: 4, name: 'Aspirin', medId: 'MED126', stock: 50, expiry: '2025-03-15' },
-    { id: 5, name: 'Cetirizine', medId: 'MED127', stock: 30, expiry: '2024-11-10' },
-    { id: 6, name: 'Loratadine', medId: 'MED128', stock: 20, expiry: '2025-01-20' },
-    { id: 7, name: 'Metformin', medId: 'MED129', stock: 50, expiry: '2025-03-15' },
-    { id: 8, name: 'Simvastatin', medId: 'MED130', stock: 30, expiry: '2024-11-10' },
-    { id: 9, name: 'Omeprazole', medId: 'MED131', stock: 20, expiry: '2025-01-20' },
-  ];
+  const [inventoryData, setInventoryData] = useState([]);
+  const wsRef = useRef(null);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const response = await fetch('http://localhost:5000/api/medicine');
+        const data = await response.json();
+        if (data.success) {
+          setInventoryData(data.data);
+        }
+      } catch (error) {
+        console.error("Error fetching inventory:", error);
+      }
+    };
+
+    fetchData();
+
+    const connectWebSocket = () => {
+      wsRef.current = new WebSocket('ws://localhost:5000');
+
+      wsRef.current.onopen = () => {
+        console.log('Connected to WebSocket server');
+      };
+
+      wsRef.current.onmessage = (event) => {
+        try {
+          console.log("WebSocket Message Received:", event.data);
+          const parsedData = JSON.parse(event.data);
+          if (parsedData.type === 'inventory_update') {
+            setInventoryData(parsedData.data);
+          }
+        } catch (error) {
+          console.error("Error parsing WebSocket message:", error);
+        }
+      };
+
+      wsRef.current.onerror = (error) => {
+        console.error("WebSocket Error:", error);
+      };
+
+      wsRef.current.onclose = () => {
+        console.log('WebSocket connection closed, attempting to reconnect...');
+        setTimeout(connectWebSocket, 3000);
+      };
+    };
+
+    connectWebSocket();
+
+    return () => {
+      if (wsRef.current) {
+        wsRef.current.close();
+      }
+    };
+  }, []);
+
+  // Function to format expiry date
+  const formatDate = (dateString) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-GB'); // Converts to DD/MM/YYYY format
+  };
 
   return (
-    <div className="min-h-screen  p-6" style={{ fontFamily: 'Poppins' }}>
-      <h1 className="text-4xl font-bold text-gray-600 mb-8" style={{ fontFamily: 'Montserrat' }}>Inventory</h1>
-      <div className="grid gap-6">
-        <Card className="p-8 shadow-lg rounded-2xl">
-          <div className="w-full">
-            {/* Header Row */}
-            <div className="grid grid-cols-5  mb-6">
-              <div className="font-medium text-xl text-gray-700 text-center">Sr. No.</div>
-              <div className="font-medium text-xl text-gray-700 text-center">Medicine ID</div>
-              <div className="font-medium text-xl text-gray-700 text-center">Medicine Name</div>
-              <div className="font-medium text-xl text-gray-700 text-center">Stock</div>
-              <div className="font-medium text-xl text-gray-700 text-center">Expiry Date</div>
-            </div>
-
-            {/* Data Rows */}
+    <div className="p-6">
+      <h1 className="text-3xl font-bold mb-4 text-gray-700" style={{ fontFamily: "Poppins, sans-serif" }}>
+        Inventory
+      </h1>
+      <div className="overflow-x-auto">
+        <table className="w-full border-collapse shadow-lg rounded-lg overflow-hidden bg-white">
+          <thead>
+            <tr className="bg-blue-700 text-white">
+              <th className="px-4 py-3">#</th>
+              <th className="px-4 py-3">Batch No</th>
+              <th className="px-4 py-3">Medicine Name</th>
+              <th className="px-4 py-3">Stock</th>
+              <th className="px-4 py-3">Expiry Date</th>
+            </tr>
+          </thead>
+          <tbody>
             {inventoryData.map((item, index) => (
-              <div key={item.medId} className="grid grid-cols-5 gap-4 mb-4 rounded-xl shadow-lg p-4 bg-blue-200">
-                <div className="text-lg text-gray-600 text-center">{index + 1}</div>
-                <div className="text-lg text-gray-600 text-center">{item.medId}</div>
-                <div className="text-lg text-gray-600 text-center">{item.name}</div>
-                <div className="text-lg text-gray-600 text-center">{item.stock}</div>
-                <div className="text-lg text-gray-600 text-center">{item.expiry}</div>
-              </div>
+              <tr
+                key={item._id}
+                className={`${index % 2 === 0 ? "bg-blue-200" : "bg-white"} text-center`}
+              >
+                <td className="px-4 py-3">{index + 1}</td>
+                <td className="px-4 py-3">{item.batchno}</td>
+                <td className="px-4 py-3">{item.name}</td>
+                <td
+                  className={`px-4 py-3 font-semibold ${
+                    item.quantity < 10 ? "text-red-600" : "text-green-600"
+                  }`}
+                >
+                  {item.quantity}
+                </td>
+                <td className="px-4 py-3">{formatDate(item.expiry)}</td>
+              </tr>
             ))}
-          </div>
-        </Card>
+          </tbody>
+        </table>
       </div>
     </div>
   );

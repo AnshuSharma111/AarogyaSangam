@@ -9,18 +9,25 @@ import axios from "axios";
 import { API_BASE_URL } from "./config";
 
 const App = () => {
-  const [backendStatus, setBackendStatus] = useState("Checking backend...");
+  const [backendStatus, setBackendStatus] = useState("");
+  const [showPopup, setShowPopup] = useState(false);
 
   // Check if backend is running
   useEffect(() => {
     axios
       .get(`${API_BASE_URL}/`)
-      .then((response) => setBackendStatus(response.data.message || "Backend connected!"))
+      .then((response) => {
+        setBackendStatus(response.data.message || "Backend connected!");
+        setShowPopup(true);
+
+        // Auto-hide the popup after 5 seconds
+        setTimeout(() => setShowPopup(false), 5000);
+      })
       .catch((error) => {
-          console.error("Backend connection error:", error);
-          setBackendStatus("Backend not connected!");
+        console.error("Backend connection error:", error);
+        setBackendStatus("Backend not connected!");
       });
-}, []);
+  }, []);
 
   return (
     <AuthProvider>
@@ -31,11 +38,23 @@ const App = () => {
           <Sidebar />
 
           {/* Main Content Area */}
-          <div className="flex-grow ml-64 p-10">
-            {/* Display Backend Status */}
-            <div className="p-4 mb-4 text-white bg-blue-600 rounded">
-              {backendStatus}
-            </div>
+          <div className="flex-grow ml-64 p-10 relative">
+            {/* Slide-in Backend Status Popup */}
+            {showPopup && (
+              <div
+                className="fixed top-5 right-5 bg-blue-600 text-white p-4 rounded-lg shadow-lg transform transition-transform translate-x-0 animate-slide-in"
+              >
+                <div className="flex justify-between items-center">
+                  <span>{backendStatus}</span>
+                  <button
+                    onClick={() => setShowPopup(false)}
+                    className="ml-4 text-white hover:text-gray-300"
+                  >
+                    ❌
+                  </button>
+                </div>
+              </div>
+            )}
 
             {/* Routes */}
             <Routes>
