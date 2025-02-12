@@ -49,7 +49,7 @@ const book = async (data) => {
     
         if (!doctor) {
             console.log("No available doctors");
-            smsEvents.emit("error", { errorCode: 2, user: from }); // Emit error if anything goes wrong
+            smsEvents.emit("error", { errorCode: 3, user: from }); // Emit error if anything goes wrong
             return;
         }
       
@@ -69,7 +69,7 @@ const book = async (data) => {
         user.appointmentno = newAppointment._id;
         await user.save();
 
-        console.log(`Appointment booked for ${from} with Dr. ${doctor.name} at ${assignedSlot}`);
+        console.log(`Appointment booked for ${from} with ${doctor.name} at ${assignedSlot}`);
 
         const content = "Hello, you have an appointment with " + doctor.name + " at " + assignedSlot + ". Please reply with 1 to confirm or 2 to cancel."; // Create the message content
         // Emit event to send confirmation SMS
@@ -113,7 +113,7 @@ const confirm = async (data) => {
         const timeSlot = appointment.timeSlot;
 
         // Send SMS to the patient that appointment has been confirmed
-        const content = "Hello, your appointment with Dr. " + doctor.name + " at " + timeSlot + " has been confirmed."; // Create the message content
+        const content = "Hello, your appointment with " + doctor.name + " at " + timeSlot + " has been confirmed."; // Create the message content
         // Send the confirmation SMS
         smsEvents.emit("sendSMS", { content, to: from });
     }
@@ -123,55 +123,59 @@ const confirm = async (data) => {
     }
 };
 
-const errorHandler = async (data) => {
-    const { errorCode, user } = data; // Extract error code from the request. Code, Phone Number
+const cancel = async (data) => {
+    try {
+        const { from } = data; // Extract Data
 
-    console.log("Handling Error...");
-    // Error Code : -1, Internal Server Error
-    if (errorCode == -1) {
-        console.log("Sending SMS informing user of internal server error..."); // Log the message
-
-        const content = "We are unable to book an appointment right now. Please try again later."; // Create the message content
-
-        // Emit event to send confirmation SMS
-        smsEvents.emit("sendSMS", { content, to: user });
-    }
-    // Error Code : 0, User already has an appointment but is trying to book another one
-    else if (errorCode == 0) {
-        console.log("Sending SMS informing user of previous appointment..."); // Log the message
-
-        const patient = await Patient.findOne({ phoneno: user }); // Find the patient
-        const appointment = await Appointment.findOne({ patientId: patient._id }); // Find the appointment
-        const doctor = await Doctor.findOne({ _id: appointment.doctorId }); // Find the doctor associated with the appointment
-
-        let content = ""; // Initialize content variable
-        if (appointment.status == "confirmed") { 
-            content = "Hello, you already have an appointment with Dr. " + doctor.name + " at " + appointment.timeSlot + "."; // Create the message content
+        // Find Appointment linked to the phoneno
+        const patient = await Patient.findOne({ phoneno: from });
+        if (!patient) { // Return if user is not registered
+            console.log(`User ${from} not registered.`);
+            smsEvents.emit("error", { errorCode: 1, user: from }); // Emit error if anything goes wrong
+            return;
         }
-        else {
-            content = "Hello, you already have an appointment with Dr. " + doctor.name + " at " + appointment.timeSlot + ". Please reply with 1 to confirm or 2 to cancel."; // Create the message content
+        const appointment = await Appointment.findOne({ patientId: patient._id });
+        if (!appointment) { // Return if user is not registered
+            console.log(`No appointment for user ${from}.`);
+            smsEvents.emit("error", { errorCode: 2, user: from }); // Emit error if anything goes wrong
+            return;
         }
 
-        // Emit event to send confirmation SMS
-        smsEvents.emit("sendSMS", { content, to: user });
+        // Get the associated appointed time slot and re-add it to the associated doctor's schedule
+        console.log("Getting booked time slot...");
+
+        const doctor = await Doctor.findOne({ _id: appointment.doctorId });
+        doctor.availableSlots.push(appointment.timeSlot);
+        await doctor.save();
+
+        console.log("Added time slot back to doctor's schedule...");
+
+        // Delete the appointment and user
+        console.log("Deleting appointment and user...");
+
+        let response = await Appointment.deleteOne({ patientId: patient._id });
+        if (response.deletedCount == 0) { // Check if the appointment was deleted
+            console.log("Could not delete appointment.");
+            smsEvents.emit("error", { errorCode: -1, user: from }); // Emit error if anything goes wrong
+            return;
+        }
+        console.log("Deleted appointment successfully.");
+        response = await Patient.deleteOne({ _id: patient._id });
+        if (response.deletedCount == 0) { // Check if the appointment was deleted
+            console.log("Could not delete patient.");
+            smsEvents.emit("error", { errorCode: -1, user: from }); // Emit error if anything goes wrong
+            return;
+        }
+        console.log("Deleted patient successfully.");
+
+        // Send SMS to the patient that appointment has been cancelled
+        const content = "Hello, your appointment has been cancelled."; // Create the message content
+        smsEvents.emit("sendSMS", { content, to: from }); // Send the confirmation SMS
     }
-    // Error Code 1: User is not registered but is trying to book an appointment
-    else if (errorCode == 1) {
-        console.log("Sending SMS informing user of not being registered..."); // Log the message
-
-        const content = "Hello, you are not registered with us. Please reply with 0 to register."; // Create the message content
-
-        // Emit event to send confirmation SMS
-        smsEvents.emit("sendSMS", { content, to: user });
-    }
-    // Error Code 2: No available doctors
-    else if (errorCode == 2) {
-        console.log("Sending SMS informing user of no available doctors..."); // Log the message
-
-        const content = "We regret to inform you that we are booked for the day. Please try again tomorrow."; // Create the message content
-
-        // Emit event to send confirmation SMS
-        smsEvents.emit("sendSMS", { content, to: user });
+    catch (error) {
+        console.log(`An error occurred: ${error}`); // log error
+        smsEvents.emit("error", { errorCode: -1, user: from }); // Emit error
     }
 }
-module.exports = { register, book, confirm, errorHandler }; // Export register and book functions
+
+module.exports = { register, book, confirm, cancel }; // Export register and book functions

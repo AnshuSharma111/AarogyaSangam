@@ -1,5 +1,5 @@
 const { mongoose } = require('mongoose');
-const Medicine = require('../Models/medicine').Medicine;
+const { Medicine } = require('../Models/medicine');
 
 // GET endpoint
 const getOneMedicine = async (req, res) => {

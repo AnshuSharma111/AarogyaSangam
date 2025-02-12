@@ -1,12 +1,12 @@
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
 
 const medicineSchema = new mongoose.Schema({
-  name: { type: String, required: [true, 'name is a required field'], trim: true },
-  quantity: { type: Number, required: [true, 'quantity is a required field'] },
-  batchno: {type: String, required: [true, 'batchno is a required field'] },
-  expiry: {type: Date, required: [true, 'expiry date is a required field'] },
+  name: { type: String, required: true, trim: true },
+  quantity: { type: Number, required: true },
+  batchno: { type: String, required: true },
+  expiry: { type: Date, required: true }
 });
 
-const Medicine = mongoose.model('medicine', medicineSchema);
+const Medicine = mongoose.model("Medicine", medicineSchema);
 
 module.exports = { Medicine };
