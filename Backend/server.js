@@ -2,6 +2,7 @@ const express = require('express');
 const medicineRouter = require('./Routers/medicine');
 const smsRouter = require('./Routers/sms');
 const receiptRouter = require("./Routers/receipt");
+const appointmentRouter = require('./Routers/appointment');
 const connectDB = require('./Config/db');
 const cors = require('cors');
 require('dotenv').config();
@@ -23,6 +24,7 @@ app.use(express.json());
 app.use('/api/medicine', medicineRouter); // Router for all medicine API calls
 app.use('/api/sms', smsRouter); // Router for SMS API calls
 app.use('/api/receipt', receiptRouter); // Router for receipt API calls
+app.use('/api/appointment', appointmentRouter); // Router for appointment API calls
 app.use(errorHandler);
 
 // test route

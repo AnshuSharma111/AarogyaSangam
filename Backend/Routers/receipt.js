@@ -6,6 +6,9 @@ const router = express.Router();
 const receiptController = require('../Services/receipt');
 
 // set up routes
+router.route('/login')
+    .post(receiptController.login);
+
 router.route('/generate')
     .post(receiptController.checkMedicineAvailability);
 

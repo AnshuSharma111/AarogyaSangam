@@ -128,4 +128,20 @@ const lodgeComplaint = async (data) => {
         console.error("Error lodging complaint: ", error);
     }
 }
-module.exports = { checkMedicineAvailability, verifyOTP };
+
+const login = async (req, res) => {
+    const {username, password } = req.body;
+    console.log("Received request to login from vendor: ", username);
+    // Check if any vedor exists with the given username and password
+    const vendor = await Vendor.findOne({ username: username, password: password });
+    if (vendor) {
+        console.log("Login successful");
+
+        return res.status(200).json({ success: true, message: "Login successful" });
+    } else {
+        console.log("Invalid username or password");
+        return res.status(400).json({ success: false, error: "Invalid username or   `1" });
+    }
+};
+
+module.exports = { checkMedicineAvailability, verifyOTP, login };
