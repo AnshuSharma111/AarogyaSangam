@@ -50,7 +50,7 @@ const App = () => {
                     onClick={() => setShowPopup(false)}
                     className="ml-4 text-white hover:text-gray-300"
                   >
-                    ❌
+                    ✅
                   </button>
                 </div>
               </div>

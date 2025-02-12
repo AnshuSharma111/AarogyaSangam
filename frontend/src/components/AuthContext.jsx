@@ -3,34 +3,40 @@ import React, { createContext, useState, useContext, useEffect } from "react";
 export const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
-    const [userId, setUserId] = useState(""); // Initial state without localStorage
+    const [userId, setUserId] = useState("");
+    const [username, setUsername] = useState("");
 
     useEffect(() => {
-        // Accessing localStorage only after component mounts
         if (typeof window !== "undefined") {
             const storedUserId = localStorage.getItem("userId");
-            if (storedUserId) {
+            const storedUsername = localStorage.getItem("username");
+            if (storedUserId && storedUsername) {
                 setUserId(storedUserId);
+                setUsername(storedUsername);
             }
         }
-    }, []); // Only run on client after the initial render
+    }, []);
 
-    const login = (id) => {
+    const login = (id, name) => {
         setUserId(id);
+        setUsername(name);
         if (typeof window !== "undefined") {
-            localStorage.setItem("userId", id);  // Store in localStorage
+            localStorage.setItem("userId", id);
+            localStorage.setItem("username", name);
         }
     };
 
     const logout = () => {
         setUserId("");
+        setUsername("");
         if (typeof window !== "undefined") {
             localStorage.removeItem("userId");
+            localStorage.removeItem("username");
         }
     };
 
     return (
-        <AuthContext.Provider value={{ userId, login, logout }}>
+        <AuthContext.Provider value={{ userId, username, login, logout }}>
             {children}
         </AuthContext.Provider>
     );

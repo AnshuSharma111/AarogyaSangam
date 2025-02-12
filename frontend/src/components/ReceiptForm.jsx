@@ -18,6 +18,15 @@ const ReceiptForm = () => {
 
     const [receiptNumber, setReceiptNumber] = useState(1);
     const [errorMessage, setErrorMessage] = useState("");
+    
+    // New state for OTP functionality
+    const [otpState, setOtpState] = useState({
+        isOtpSent: false,
+        isOtpVerified: false,
+        otp: "",
+        resendCount: 0,
+        showOtpInput: false
+    });
 
     useEffect(() => {
         localStorage.setItem("receiptNumber", 1);
@@ -39,6 +48,108 @@ const ReceiptForm = () => {
         }
 
         setMedicines(updatedMedicines);
+    };
+
+    // New OTP related functions
+    const handleOtpChange = (e) => {
+        setOtpState(prev => ({
+            ...prev,
+            otp: e.target.value
+        }));
+    };
+
+    const handleSendOtp = async () => {
+        if (!customerDetails.customerPhone) {
+            setErrorMessage("Please enter a phone number first");
+            return;
+        }
+
+        try {
+            // Replace with your actual API endpoint
+            const response = await fetch('/api/send-otp', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    phoneNumber: customerDetails.customerPhone
+                })
+            });
+
+            if (response.ok) {
+                setOtpState(prev => ({
+                    ...prev,
+                    isOtpSent: true,
+                    showOtpInput: true
+                }));
+                setErrorMessage("");
+            } else {
+                setErrorMessage("Failed to send OTP. Please try again.");
+            }
+        } catch (error) {
+            setErrorMessage("Error sending OTP. Please try again.");
+        }
+    };
+
+    const handleResendOtp = async () => {
+        if (otpState.resendCount >= 3) {
+            setErrorMessage("Maximum resend attempts reached. Please try again later.");
+            return;
+        }
+
+        try {
+            // Replace with your actual API endpoint
+            const response = await fetch('/api/resend-otp', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    phoneNumber: customerDetails.customerPhone
+                })
+            });
+
+            if (response.ok) {
+                setOtpState(prev => ({
+                    ...prev,
+                    resendCount: prev.resendCount + 1
+                }));
+                setErrorMessage("");
+            } else {
+                setErrorMessage("Failed to resend OTP. Please try again.");
+            }
+        } catch (error) {
+            setErrorMessage("Error resending OTP. Please try again.");
+        }
+    };
+
+    const handleVerifyOtp = async () => {
+        try {
+            // Replace with your actual API endpoint
+            const response = await fetch('/api/verify-otp', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    phoneNumber: customerDetails.customerPhone,
+                    otp: otpState.otp
+                })
+            });
+
+            if (response.ok) {
+                setOtpState(prev => ({
+                    ...prev,
+                    isOtpVerified: true,
+                    showOtpInput: false
+                }));
+                setErrorMessage("");
+            } else {
+                setErrorMessage("Invalid OTP. Please try again.");
+            }
+        } catch (error) {
+            setErrorMessage("Error verifying OTP. Please try again.");
+        }
     };
 
     const addMedicineRow = () => {
@@ -63,6 +174,11 @@ const ReceiptForm = () => {
             !customerDetails.customerId
         ) {
             setErrorMessage("Please fill out all customer details.");
+            return false;
+        }
+
+        if (!otpState.isOtpVerified) {
+            setErrorMessage("Please verify OTP first.");
             return false;
         }
 
@@ -213,12 +329,52 @@ const ReceiptForm = () => {
                     Add Medicine
                 </button>
                 <h3 className="font-bold text-lg mt-6">Total Price: ₹{calculateTotalPrice()}</h3>
+                
+                {/* OTP Section */}
+                <div className="mt-6">
+                    {!otpState.isOtpVerified && (
+                        <>
+                            <button
+                                onClick={otpState.isOtpSent ? handleVerifyOtp : handleSendOtp}
+                                className="bg-blue-500 text-white px-4 py-2 rounded mr-2"
+                                disabled={!customerDetails.customerPhone}
+                            >
+                                {otpState.isOtpSent ? "Verify OTP" : "Send OTP"}
+                            </button>
+                            
+                            {otpState.showOtpInput && (
+                                <>
+                                    <input
+                                        type="text"
+                                        value={otpState.otp}
+                                        onChange={handleOtpChange}
+                                        placeholder="Enter OTP"
+                                        className="border px-2 py-1 rounded mx-2"
+                                    />
+                                    {otpState.resendCount < 3 && (
+                                        <button
+                                            onClick={handleResendOtp}
+                                            className="bg-gray-500 text-white px-4 py-2 rounded"
+                                        >
+                                            Resend OTP ({3 - otpState.resendCount} attempts left)
+                                        </button>
+                                    )}
+                                </>
+                            )}
+                        </>
+                    )}
+                </div>
+
                 {errorMessage && (
                     <p className="text-red-500 font-medium mt-4">{errorMessage}</p>
                 )}
+                
                 <button
                     onClick={generatePDF}
-                    className="bg-green-500 text-white px-4 py-2 rounded mt-4"
+                    className={`bg-green-500 text-white px-4 py-2 rounded mt-4 ${
+                        !otpState.isOtpVerified ? 'opacity-50 cursor-not-allowed' : ''
+                    }`}
+                    disabled={!otpState.isOtpVerified}
                 >
                     Generate Receipt
                 </button>

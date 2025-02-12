@@ -6,6 +6,9 @@ const connectDB = require('./Config/db');
 const medicineRouter = require('./Routers/medicine');
 const smsRouter = require('./Routers/sms');
 const cors = require('cors');
+const jwt = require('jsonwebtoken');
+const { Vendor: User } = require('./Models/user'); 
+const secretKey = process.env.JWT_SECRET;
 require('dotenv').config();
 require("./Config/jobs");
 require("./Listeners/smsListener");
@@ -73,6 +76,32 @@ app.post('/api/update-inventory', async (req, res) => {
 // Default Route for `/`
 app.get('/', (req, res) => {
     res.send('Welcome to the Inventory Management API');
+});
+
+app.post('/api/receipt/login', async (req, res) => {
+    try {
+        const { username, password } = req.body;
+
+        // Find user in the database
+        const user = await User.findOne({ username });
+
+        if (!user) {
+            return res.status(401).json({ message: "Invalid credentials" });
+        }
+
+        // Directly compare passwords (⚠️ Not recommended for production)
+        if (user.password !== password) {
+            return res.status(401).json({ message: "Invalid credentials" });
+        }
+
+        // Generate JWT Token
+        const token = jwt.sign({ id: user._id, username: user.username }, secretKey, { expiresIn: "1h" });
+
+        res.json({ token, message: "Login successful" });
+    } catch (error) {
+        console.error("Login Error:", error);
+        res.status(500).json({ message: "Server error" });
+    }
 });
 
 // Use Routers
