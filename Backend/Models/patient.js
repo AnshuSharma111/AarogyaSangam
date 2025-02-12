@@ -5,6 +5,6 @@ const patientSchema = new mongoose.Schema({
     appointmentno : { type: mongoose.Schema.Types.ObjectId, ref: "Appointment" },
 });
 
-const Patient = mongoose.model('patient', patientSchema);
+const Patient = mongoose.model('Patient', patientSchema);
 
 module.exports = { Patient };

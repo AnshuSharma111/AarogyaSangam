@@ -1,9 +1,13 @@
 const smsEvents = require("../eventBus"); // Import shared event emitter
 const appointmentController = require("../Services/appointment"); // Import appointment controller
 const smsController = require("../Services/sms"); // Import sms controller
+const errorHandler = require("../Config/errors"); // Import error handler
 
-smsEvents.on("register", appointmentController.register); // Listen for register event and call register function
-smsEvents.on("book", appointmentController.book); // Listen for book event and call book function
-smsEvents.on("confirm", appointmentController.confirm); // Listen for confirm event and call confirm function
-smsEvents.on("sendSMS", smsController.send); // Listen for appointmentBooked event and call confirm function
-smsEvents.on("error", appointmentController.errorHandler); // Listen for error event and call errorHandler function
+// Listem for events
+smsEvents.on("register", appointmentController.register); // register patient event
+smsEvents.on("book", appointmentController.book); // book appointment event
+smsEvents.on("confirm", appointmentController.confirm); // confirm appointment event
+smsEvents.on("cancel", appointmentController.cancel); // cancel appointment event
+smsEvents.on("sendSMS", smsController.send); // send SMS event
+
+smsEvents.on("error", errorHandler.errorHandler); // error event

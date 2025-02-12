@@ -1,10 +1,8 @@
 const express = require('express');
-const http = require('http');
-const winston = require('winston');
-const WebSocket = require('ws');
-const connectDB = require('./Config/db');
 const medicineRouter = require('./Routers/medicine');
 const smsRouter = require('./Routers/sms');
+const receiptRouter = require("./Routers/receipt");
+const connectDB = require('./Config/db');
 const cors = require('cors');
 require('dotenv').config();
 require("./Config/jobs");
@@ -12,89 +10,39 @@ require("./Listeners/smsListener");
 
 const PORT = process.env.PORT || 5000;
 const app = express();
-const server = http.createServer(app);
 
-const logger = winston.createLogger({
-    level: "info",
-    transports: [
-        new winston.transports.Console(),
-        new winston.transports.File({ filename: "server.log" })
-    ]
-});
-
-// WebSocket Server Setup
-const wss = new WebSocket.Server({ server });
-
-wss.on('connection', (ws) => {
-    console.log('Client connected to WebSocket');
-
-    ws.on('close', () => {
-        console.log('Client disconnected');
-    });
-
-    ws.on('error', (err) => {
-        console.error('WebSocket error:', err);
-    });
-});
-
-// Function to Broadcast Inventory Updates
-const broadcastInventoryUpdate = async () => {
-    try {
-        const Medicine = require('./Models/medicine').Medicine;
-        const medicines = await Medicine.find();
-        const payload = JSON.stringify({ type: 'inventory_update', data: medicines });
-
-        wss.clients.forEach(client => {
-            if (client.readyState === WebSocket.OPEN) {
-                client.send(payload);
-            }
-        });
-    } catch (error) {
-        console.error('Error broadcasting inventory update:', error);
-    }
-};
-
-// Middleware
-app.use(cors({ origin: "*" }));
-app.use(express.json());
-
-// Attach WebSocket Broadcast Function to Request
-app.use((req, res, next) => {
-    req.broadcastInventoryUpdate = broadcastInventoryUpdate;
-    next();
-});
-
-// ✅ Fix: Ensure WebSocket Updates on Inventory Change
-app.post('/api/update-inventory', async (req, res) => {
-    await broadcastInventoryUpdate();
-    res.status(200).json({ message: "Inventory updated" });
-});
-
-// Default Route for `/`
-app.get('/', (req, res) => {
-    res.send('Welcome to the Inventory Management API');
-});
-
-// Use Routers
-app.use('/api/medicine', medicineRouter);
-app.use('/api/sms', smsRouter);
-
-// Error Handling Middleware
+// error handler for middleware
 const errorHandler = (err, req, res, next) => {
     logger.error(err.stack);
     res.status(500).json({ error: "Something went wrong!" });
 };
+
+// Middleware
+app.use(cors());
+app.use(express.json());
+app.use('/api/medicine', medicineRouter); // Router for all medicine API calls
+app.use('/api/sms', smsRouter); // Router for SMS API calls
+app.use('/api/receipt', receiptRouter); // Router for receipt API calls
 app.use(errorHandler);
 
-// Start the Server
+// test route
+app.get("/", (req, res) => {
+    res.send("<h1>Aarogya Sangam is up and running</h1>");
+});
+
+// Non-existent route handler
+app.all("*", (req, res) => {
+    res.status(404).send("<h1>Page Not Found 404</h1>");
+});
+
 const start = async () => {
     try {
         await connectDB();
-        server.listen(PORT, () => {
-            logger.info(`Server running on port ${PORT}...`);
+        app.listen(PORT, () => {
+            console.log(`Server running on port ${PORT}...`);
         });
     } catch (error) {
-        logger.error("Error starting server: ", error);
+        console.log("Error starting server: ", error);
     }
 };
 
