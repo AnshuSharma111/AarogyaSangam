@@ -6,6 +6,7 @@ const connectDB = require('./Config/db');
 const medicineRouter = require('./Routers/medicine');
 const smsRouter = require('./Routers/sms');
 const receiptRouter = require('./Routers/receipt');
+const appointmentRouter = require('./Routers/appointment');
 const cors = require('cors');
 const jwt = require('jsonwebtoken');
 const { Vendor:User } = require('./Models/vendor');
@@ -112,6 +113,7 @@ app.post('/api/receipt/login', async (req, res) => {
 app.use('/api/medicine', medicineRouter);
 app.use('/api/sms', smsRouter);
 app.use('/api/receipt', receiptRouter);
+app.use('/api/appointment', appointmentRouter);
 
 // Error handling middleware
 const errorHandler = (err, req, res, next) => {

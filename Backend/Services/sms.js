@@ -67,7 +67,7 @@ const receive = async (req, res) => {
     else {
         console.log("Unknown SMS received"); // Log the request
 
-        smsEvents.emit("guide", { from });
+        smsEvents.emit("guide", { content, from });
 
         return res.status(200).json({ success: true, message: "Unknown SMS received" });
     }

@@ -2,7 +2,7 @@ const Patient = require('../Models/patient').Patient; // Import patient model
 const Doctor = require('../Models/doctor').Doctor; // Import doctor model
 const Appointment = require('../Models/appointment').Appointment; // Import appointment model
 const smsEvents = require('../eventBus'); // Import event bus
-const generateResponse = require("./genai.mjs"); // Import function to prompt model
+const { generateResponse } = require("./genai.mjs"); // Import function to prompt model
 require("./genai.mjs"); // Import Model
 
 const register = async (data) => {
@@ -205,7 +205,7 @@ const guide = async (data) => {
 
         console.log("Generated response " + response);
 
-        smsEvents.emit("sendSMS", from, response);
+        smsEvents.emit("sendSMS", { content: response, to: from });
     } catch (error) {
         console.log(`An error occurred: ${error}`); // log error
         smsEvents.emit("error", { errorCode: -1, user: from }); // SET LATER
