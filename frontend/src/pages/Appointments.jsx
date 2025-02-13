@@ -3,42 +3,61 @@ import axios from "axios";
 import { API_BASE_URL } from "../config";
 
 const Appointments = () => {
-  const [patients, setPatients] = useState([]);
+  const [appointments, setAppointments] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Fetch patients and their appointments from backend
+    // Fetch appointments from backend
     axios.get(`${API_BASE_URL}/appointments`)
       .then((response) => {
-        setPatients(response.data);
+        setAppointments(response.data.data); // Adjusting based on backend response structure
         setLoading(false);
       })
       .catch((error) => {
-        console.error("Error fetching patients:", error);
+        console.error("Error fetching appointments:", error);
         setLoading(false);
       });
   }, []);
 
   return (
-    <div className="p-4" style={{ fontFamily: "Poppins, sans-serif" }}>
-      <h2 className="text-2xl font-bold text-gray-700 mb-4">Patient Appointments</h2>
+    <div className="p-6 font-[Poppins]">
+      <h2 className="text-2xl font-bold text-gray-700 mb-6">Patient Appointments</h2>
 
       {loading ? (
-        <p>Loading patients...</p>
+        <p className="text-lg text-gray-500">Loading appointments...</p>
+      ) : appointments.length === 0 ? (
+        <p className="text-lg text-gray-500">No appointments found.</p>
       ) : (
-        <div className="space-y-4">
-          {patients.length === 0 ? (
-            <p>No appointments found.</p>
-          ) : (
-            patients.map((patient) => (
-              <div key={patient.id} className="border p-4 rounded-lg shadow-md">
-                <p className="text-lg font-semibold">Patient: {patient.name}</p>
-                <p>Mobile: {patient.mobile}</p>
-                <p>Status: {patient.status}</p>
-                <p>Appointment Time: {patient.bookingTime}</p>
-              </div>
-            ))
-          )}
+        <div className="overflow-x-auto">
+          <table className="w-full border-collapse bg-white shadow-lg rounded-lg overflow-hidden">
+            <thead>
+              <tr className="bg-blue-600 text-white text-left">
+                <th className="py-3 px-5">Patient Name</th>
+                <th className="py-3 px-5">Doctor Name</th>
+                <th className="py-3 px-5">Appointment Time</th>
+                <th className="py-3 px-5">Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {appointments.map((appointment, index) => (
+                <tr 
+                  key={appointment._id} 
+                  className={`border-b ${index % 2 === 0 ? "bg-gray-50" : "bg-gray-100"}`}
+                >
+                  <td className="py-3 px-5">{appointment.patientId?.name || "Unknown"}</td>
+                  <td className="py-3 px-5">{appointment.doctorId?.name || "Unknown"}</td>
+                  <td className="py-3 px-5">{appointment.timeSlot}</td>
+                  <td 
+                    className={`py-3 px-5 font-semibold ${
+                      appointment.status === "confirmed" ? "text-green-600" : "text-yellow-600"
+                    }`}
+                  >
+                    {appointment.status}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       )}
     </div>

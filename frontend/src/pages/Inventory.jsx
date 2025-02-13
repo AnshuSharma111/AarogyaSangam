@@ -1,10 +1,20 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
+import io from 'socket.io-client';
 
 const Inventory = () => {
   const [inventoryData, setInventoryData] = useState([]);
-  const wsRef = useRef(null);
+  const [isConnected, setIsConnected] = useState(false);
 
   useEffect(() => {
+    // Create socket instance
+    const socket = io('http://localhost:5000', {
+      transports: ['websocket', 'polling'],
+      reconnectionAttempts: 5,
+      reconnectionDelay: 1000,
+      autoConnect: true
+    });
+
+    // Initial data fetch
     const fetchData = async () => {
       try {
         const response = await fetch('http://localhost:5000/api/medicine');
@@ -13,54 +23,47 @@ const Inventory = () => {
           setInventoryData(data.data);
         }
       } catch (error) {
-        console.error("Error fetching inventory:", error);
+        console.error("Error fetching data:", error);
       }
     };
 
-    fetchData();
+    // Socket event handlers
+    socket.on('connect', () => {
+      console.log('Socket connected:', socket.id);
+      setIsConnected(true);
+      fetchData(); // Fetch initial data when connected
+    });
 
-    const connectWebSocket = () => {
-      wsRef.current = new WebSocket('ws://localhost:5000');
+    socket.on('disconnect', () => {
+      console.log('Socket disconnected');
+      setIsConnected(false);
+    });
 
-      wsRef.current.onopen = () => {
-        console.log('Connected to WebSocket server');
-      };
+    socket.on('inventory_update', (data) => {
+      console.log('Received inventory update:', data);
+      setInventoryData(data);
+    });
 
-      wsRef.current.onmessage = (event) => {
-        try {
-          console.log("WebSocket Message Received:", event.data);
-          const parsedData = JSON.parse(event.data);
-          if (parsedData.type === 'inventory_update') {
-            setInventoryData(parsedData.data);
-          }
-        } catch (error) {
-          console.error("Error parsing WebSocket message:", error);
-        }
-      };
+    socket.on('connect_error', (error) => {
+      console.log('Connection error:', error);
+      setIsConnected(false);
+    });
 
-      wsRef.current.onerror = (error) => {
-        console.error("WebSocket Error:", error);
-      };
-
-      wsRef.current.onclose = () => {
-        console.log('WebSocket connection closed, attempting to reconnect...');
-        setTimeout(connectWebSocket, 3000);
-      };
-    };
-
-    connectWebSocket();
-
+    // Cleanup on unmount
     return () => {
-      if (wsRef.current) {
-        wsRef.current.close();
-      }
+      console.log('Cleaning up socket connection');
+      socket.off('connect');
+      socket.off('disconnect');
+      socket.off('inventory_update');
+      socket.off('connect_error');
+      socket.close();
     };
-  }, []);
+  }, []); 
 
   // Function to format expiry date
   const formatDate = (dateString) => {
     const date = new Date(dateString);
-    return date.toLocaleDateString('en-GB'); // Converts to DD/MM/YYYY format
+    return date.toLocaleDateString('en-GB');
   };
 
   return (
@@ -68,6 +71,12 @@ const Inventory = () => {
       <h1 className="text-3xl font-bold mb-4 text-gray-700" style={{ fontFamily: "Poppins, sans-serif" }}>
         Inventory
       </h1>
+      {/* Connection Status Indicator */}
+      <div className={`fixed bottom-4 right-4 p-2 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`}>
+        <span className="text-white text-sm px-3">
+          {isConnected ? 'Connected' : 'Disconnected'}
+        </span>
+      </div>
       <div className="overflow-x-auto">
         <table className="w-full border-collapse shadow-lg rounded-lg overflow-hidden bg-white">
           <thead>

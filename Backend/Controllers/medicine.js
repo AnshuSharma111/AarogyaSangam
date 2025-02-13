@@ -1,7 +1,7 @@
 const { mongoose } = require('mongoose');
-const Medicine = require('../Models/medicine').Medicine;
+const { Medicine } = require('../Models/medicine');
 
-// GET Single Medicine
+// GET endpoint
 const getOneMedicine = async (req, res) => {
     try {
         const { id } = req.params;
@@ -13,41 +13,51 @@ const getOneMedicine = async (req, res) => {
             return res.status(404).json({ success: false, message: `No Medicine with id: ${id} found` });
         }
         return res.status(200).json({ success: true, data: med });
-    } catch (err) {
+    }
+    catch (err) {
         return res.status(500).json({ success: false, message: err.message });
     }
 };
 
-// GET All Medicines
+// GET endpoint
 const getAllMedicine = async (req, res) => {
     try {
         const meds = await Medicine.find();
         return res.status(200).json({ success: true, data: meds });
-    } catch (err) {
+    }
+    catch (err) {
         return res.status(500).json({ success: false, message: err.message });
     }
 };
 
-// POST New Medicine
+// POST endpoint
 const addMedicine = async (req, res) => {
     try {
-        const { name, quantity, batchno, expiry } = req.body;
-        if (!name || !quantity || !batchno || !expiry) {
-            return res.status(400).json({ success: false, message: "All fields are required!" });
-        }
-        const newMedicine = new Medicine({ name, quantity, batchno, expiry });
-        await newMedicine.save();
+        let { name, quantity, batchno, expiry } = req.body;
+        name = name.toLowerCase();
 
-        // Broadcast inventory update
-        req.broadcastInventoryUpdate();
+        if (!name || !quantity || !batchno || !expiry) {
+            return res.status(400).json({ success: false, message: "Invalid Details!" });
+        }
+        const newMedicine = new Medicine({ name: name, quantity: quantity, batchno: batchno, expiry: expiry });
+        await newMedicine.save();
+        
+        // Broadcast update after successful save
+        try {
+            await req.broadcastInventoryUpdate();
+        } catch (broadcastError) {
+            console.error('Error broadcasting inventory update:', broadcastError);
+            // Continue with the response even if broadcast fails
+        }
 
         return res.status(201).json({ success: true, message: "Medicine Added!", id: newMedicine._id });
-    } catch (err) {
+    }
+    catch (err) {
         return res.status(500).json({ success: false, message: err.message });
     }
 };
 
-// DELETE Medicine
+// DELETE endpoint
 const deleteMedicine = async (req, res) => {
     try {
         const { id } = req.params;
@@ -59,34 +69,58 @@ const deleteMedicine = async (req, res) => {
             return res.status(404).json({ success: false, message: `No Medicine with id: ${id} found` });
         }
 
-        // Broadcast inventory update
-        req.broadcastInventoryUpdate();
+        // Broadcast update after successful deletion
+        try {
+            await req.broadcastInventoryUpdate();
+        } catch (broadcastError) {
+            console.error('Error broadcasting inventory update:', broadcastError);
+            // Continue with the response even if broadcast fails
+        }
 
         return res.status(200).json({ success: true, message: "Medicine Deleted!" });
-    } catch (err) {
+    }
+    catch (err) {
         return res.status(500).json({ success: false, message: err.message });
     }
 };
 
-// PATCH Update Medicine
+// PATCH endpoint
 const updateMedicine = async (req, res) => {
+    const { id } = req.params;
+    const { name, quantity, batchno, expiry } = req.body;
+    if (!name || !quantity || !batchno || !expiry) {
+        return res.status(400).json({ success: false, message: "Invalid Details!" });
+    }
     try {
-        const { id } = req.params;
-        if (!mongoose.Types.ObjectId.isValid(id)) {
-            return res.status(400).json({ success: false, message: "Invalid ID!" });
-        }
-        const updatedMed = await Medicine.findByIdAndUpdate(id, req.body, { new: true, runValidators: true });
-        if (!updatedMed) {
+        const med = await Medicine.findByIdAndUpdate(
+            id, 
+            { name: name, quantity: quantity, batchno: batchno, expiry: expiry },
+            { new: true } // Return updated document
+        );
+        
+        if (!med) {
             return res.status(404).json({ success: false, message: "No Medicine Found!" });
         }
 
-        // Broadcast inventory update
-        req.broadcastInventoryUpdate();
+        // Broadcast update after successful update
+        try {
+            await req.broadcastInventoryUpdate();
+        } catch (broadcastError) {
+            console.error('Error broadcasting inventory update:', broadcastError);
+            // Continue with the response even if broadcast fails
+        }
 
-        return res.status(200).json({ success: true, message: "Medicine Updated!", data: updatedMed });
-    } catch (err) {
+        return res.status(200).json({ success: true, message: "Medicine Updated!" });
+    }
+    catch (err) {
         return res.status(500).json({ success: false, message: err.message });
     }
 };
 
-module.exports = { getOneMedicine, getAllMedicine, addMedicine, deleteMedicine, updateMedicine };
+module.exports = { 
+    getOneMedicine, 
+    getAllMedicine, 
+    addMedicine, 
+    deleteMedicine, 
+    updateMedicine 
+};

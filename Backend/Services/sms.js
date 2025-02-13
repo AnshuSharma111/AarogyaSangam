@@ -26,6 +26,8 @@ const send = async (data) => {
 
         if (!response.ok) {
             console.log("An error occured while sending SMS!"); // Log error
+            console.log(response);
+            return;
         }
 
         console.log("Sent SMS to " + to + " from " + from + " with content: " + content); // Log the message sent
@@ -56,8 +58,16 @@ const receive = async (req, res) => {
         smsEvents.emit("confirm", { from }); // Emit event to confirm an appointment
         return res.status(200).json({ success: true, message: "Appointment confirmation request received" });
     }
+    else if (content == "2") { // 2 is the code to cancel appointment
+        console.log("Appointment cancellation request received"); // Log the request
+
+        smsEvents.emit("cancel", { from }); // Emit event to cancel an appointment
+        return res.status(200).json({ success: true, message: "Appointment cancellation request received" });
+    }
     else {
         console.log("Unknown SMS received"); // Log the request
+
+        smsEvents.emit("guide", { from });
 
         return res.status(200).json({ success: true, message: "Unknown SMS received" });
     }

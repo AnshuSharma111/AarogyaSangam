@@ -4,8 +4,12 @@ import "jspdf-autotable";
 import MedicineRow from "./MedicineRow";
 import { useAuth } from "./AuthContext";
 
+const API_OTP = "http://localhost:5000/api/receipt/generate";
+const API_VERIFY_OTP = "http://localhost:5000/api/receipt/verify";
+
 const ReceiptForm = () => {
-    const { userId } = useAuth();
+    const { username } = useAuth();
+
     const [customerDetails, setCustomerDetails] = useState({
         customerName: "",
         customerPhone: "",
@@ -59,23 +63,35 @@ const ReceiptForm = () => {
     };
 
     const handleSendOtp = async () => {
-        if (!customerDetails.customerPhone) {
-            setErrorMessage("Please enter a phone number first");
+        if (!customerDetails.customerPhone || customerDetails.customerPhone.trim() === "") {
+            setErrorMessage("Please enter a valid phone number.");
             return;
         }
-
+    
+        if (medicines.length === 0 || medicines.some(med => !med.medicineName.trim())) {
+            setErrorMessage("Please enter at least one medicine name.");
+            return;
+        }
+    
         try {
-            // Replace with your actual API endpoint
-            const response = await fetch('/api/send-otp', {
+            const requestBody = {
+                medicines: medicines.map((med) => ({
+                    name: med.medicineName,
+                    quantity: med.quantity,
+                  })),
+                  recipient: customerDetails.customerPhone,
+            };
+    
+            console.log("Request Payload:", requestBody); // Debugging
+    
+            const response = await fetch(API_OTP, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({
-                    phoneNumber: customerDetails.customerPhone
-                })
+                body: JSON.stringify(requestBody)
             });
-
+    
             if (response.ok) {
                 setOtpState(prev => ({
                     ...prev,
@@ -84,13 +100,15 @@ const ReceiptForm = () => {
                 }));
                 setErrorMessage("");
             } else {
-                setErrorMessage("Failed to send OTP. Please try again.");
+                 // Get more details from the server
+                setErrorMessage("Failed to send OTP");
             }
         } catch (error) {
             setErrorMessage("Error sending OTP. Please try again.");
+            console.error("Send OTP Error:", error);
         }
     };
-
+    
     const handleResendOtp = async () => {
         if (otpState.resendCount >= 3) {
             setErrorMessage("Maximum resend attempts reached. Please try again later.");
@@ -98,14 +116,17 @@ const ReceiptForm = () => {
         }
 
         try {
-            // Replace with your actual API endpoint
-            const response = await fetch('/api/resend-otp', {
+            const response = await fetch(API_OTP, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-                    phoneNumber: customerDetails.customerPhone
+                    medicines: medicines.map((med) => ({
+                        name: med.medicineName,
+                        quantity: med.quantity,
+                      })),
+                      recipient: customerDetails.customerPhone,
                 })
             });
 
@@ -124,19 +145,31 @@ const ReceiptForm = () => {
     };
 
     const handleVerifyOtp = async () => {
+        if (!otpState.otp.trim()) {
+            setErrorMessage("Please enter the OTP.");
+            return;
+        }
+    
         try {
-            // Replace with your actual API endpoint
-            const response = await fetch('/api/verify-otp', {
+            const requestBody = {
+                medicines: medicines.map((med) => ({
+                    name: med.medicineName,
+                    quantity: med.quantity,
+                  })),
+                  recipient: customerDetails.customerPhone,
+                otp: otpState.otp
+            };
+    
+            console.log("Verify OTP Payload:", requestBody); // Debugging
+    
+            const response = await fetch(API_VERIFY_OTP, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({
-                    phoneNumber: customerDetails.customerPhone,
-                    otp: otpState.otp
-                })
+                body: JSON.stringify(requestBody)
             });
-
+    
             if (response.ok) {
                 setOtpState(prev => ({
                     ...prev,
@@ -145,10 +178,12 @@ const ReceiptForm = () => {
                 }));
                 setErrorMessage("");
             } else {
-                setErrorMessage("Invalid OTP. Please try again.");
+                const errorData = await response.json();
+                setErrorMessage(`Invalid OTP: ${errorData.message}`);
             }
         } catch (error) {
             setErrorMessage("Error verifying OTP. Please try again.");
+            console.error("Verify OTP Error:", error);
         }
     };
 
@@ -210,7 +245,7 @@ const ReceiptForm = () => {
         doc.setFontSize(12);
         doc.setTextColor(0, 0, 0);
         doc.text(`Receipt Number: ${receiptNumber}`, 20, 30);
-        doc.text(`User ID: ${userId}`, 150, 30);
+        doc.text(`User ID: ${username}`, 150, 30);
 
         doc.setFontSize(12);
         doc.text(`Customer Name: ${customerDetails.customerName}`, 20, 50);
@@ -276,7 +311,7 @@ const ReceiptForm = () => {
                         className="text-sm text-gray-700"
                         style={{ fontFamily: "Poppins" }}
                     >
-                        User ID: {userId}
+                        Chemist Id: {username || "Not Available"}
                     </p>
                 </div>
                 <div className="mb-6">

@@ -1,8 +1,30 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { jwtDecode } from "jwt-decode"; 
 
 const LoginPage = ({ onLoginSuccess }) => {
     const [credentials, setCredentials] = useState({ username: "", password: "" });
     const [error, setError] = useState("");
+
+    useEffect(() => {
+        const token = localStorage.getItem("token");
+        if (token) {
+            try {
+                const decoded = jwtDecode(token);
+                const currentTime = Date.now() / 1000;
+
+                if (decoded.exp > currentTime) {
+                    localStorage.setItem("username", decoded.username); // ✅ Store username from token
+                    onLoginSuccess();
+                } else {
+                    localStorage.removeItem("token");
+                    localStorage.removeItem("username");
+                }
+            } catch (error) {
+                localStorage.removeItem("token");
+                localStorage.removeItem("username");
+            }
+        }
+    }, [onLoginSuccess]);
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -15,17 +37,19 @@ const LoginPage = ({ onLoginSuccess }) => {
         try {
             const response = await fetch("http://localhost:5000/api/receipt/login", {
                 method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
+                headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(credentials),
             });
 
             const data = await response.json();
 
             if (response.ok) {
-                localStorage.setItem("token", data.token); // Store JWT token
-                onLoginSuccess(); // Redirect or update UI
+                localStorage.setItem("token", data.token);
+                
+                const decoded = jwtDecode(data.token); // ✅ Decode the token
+                localStorage.setItem("username", decoded.username); // ✅ Store username
+
+                onLoginSuccess(); 
             } else {
                 setError(data.message || "Login failed");
             }

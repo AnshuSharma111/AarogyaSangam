@@ -1,42 +1,58 @@
 import React, { createContext, useState, useContext, useEffect } from "react";
+import { jwtDecode } from "jwt-decode";
 
 export const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
-    const [userId, setUserId] = useState("");
-    const [username, setUsername] = useState("");
+    // Initialize username from localStorage to ensure it loads instantly
+    const storedToken = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+    const storedUsername = storedToken ? jwtDecode(storedToken)?.username || "" : "";
+
+    const [username, setUsername] = useState(storedUsername);
+    const [isAuthenticated, setIsAuthenticated] = useState(!!storedToken);
 
     useEffect(() => {
         if (typeof window !== "undefined") {
-            const storedUserId = localStorage.getItem("userId");
-            const storedUsername = localStorage.getItem("username");
-            if (storedUserId && storedUsername) {
-                setUserId(storedUserId);
-                setUsername(storedUsername);
+            const token = localStorage.getItem("token");
+
+            if (token) {
+                try {
+                    const decoded = jwtDecode(token);
+                    const currentTime = Date.now() / 1000;
+
+                    if (decoded.exp > currentTime) {
+                        setUsername(decoded.username);
+                        setIsAuthenticated(true);
+                    } else {
+                        localStorage.removeItem("token");
+                    }
+                } catch (error) {
+                    localStorage.removeItem("token");
+                }
             }
         }
     }, []);
 
-    const login = (id, name) => {
-        setUserId(id);
-        setUsername(name);
+    const login = (token) => {
         if (typeof window !== "undefined") {
-            localStorage.setItem("userId", id);
-            localStorage.setItem("username", name);
+            localStorage.setItem("token", token);
+            const decoded = jwtDecode(token);
+            setUsername(decoded.username);
+            setIsAuthenticated(true);
         }
     };
 
     const logout = () => {
-        setUserId("");
         setUsername("");
+        setIsAuthenticated(false);
+
         if (typeof window !== "undefined") {
-            localStorage.removeItem("userId");
-            localStorage.removeItem("username");
+            localStorage.removeItem("token");
         }
     };
 
     return (
-        <AuthContext.Provider value={{ userId, username, login, logout }}>
+        <AuthContext.Provider value={{ username, isAuthenticated, login, logout }}>
             {children}
         </AuthContext.Provider>
     );

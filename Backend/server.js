@@ -1,13 +1,14 @@
 const express = require('express');
 const http = require('http');
+const { Server } = require('socket.io');
 const winston = require('winston');
-const WebSocket = require('ws');
 const connectDB = require('./Config/db');
 const medicineRouter = require('./Routers/medicine');
 const smsRouter = require('./Routers/sms');
+const receiptRouter = require('./Routers/receipt');
 const cors = require('cors');
 const jwt = require('jsonwebtoken');
-const { Vendor: User } = require('./Models/user'); 
+const { Vendor:User } = require('./Models/vendor');
 const secretKey = process.env.JWT_SECRET;
 require('dotenv').config();
 require("./Config/jobs");
@@ -17,6 +18,7 @@ const PORT = process.env.PORT || 5000;
 const app = express();
 const server = http.createServer(app);
 
+// Logger setup
 const logger = winston.createLogger({
     level: "info",
     transports: [
@@ -25,55 +27,61 @@ const logger = winston.createLogger({
     ]
 });
 
-// WebSocket Server Setup
-const wss = new WebSocket.Server({ server });
-
-wss.on('connection', (ws) => {
-    console.log('Client connected to WebSocket');
-
-    ws.on('close', () => {
-        console.log('Client disconnected');
+// Socket.IO setup
+const io = new Server(server, {
+    cors: {
+      origin: "http://localhost:3000", // Replace with your frontend URL
+      methods: ["GET", "POST", "PATCH", "DELETE"],
+      credentials: true
+    },
+    transports: ['websocket', 'polling']
+  });
+  
+  // Track connected clients
+  let connectedClients = new Set();
+  
+  // Socket.IO connection handling
+  io.on('connection', (socket) => {
+    console.log('Client connected:', socket.id);
+    connectedClients.add(socket.id);
+    console.log('Total connected clients:', connectedClients.size);
+  
+    socket.on('disconnect', () => {
+      console.log('Client disconnected:', socket.id);
+      connectedClients.delete(socket.id);
+      console.log('Total connected clients:', connectedClients.size);
     });
-
-    ws.on('error', (err) => {
-        console.error('WebSocket error:', err);
-    });
-});
-
-// Function to Broadcast Inventory Updates
-const broadcastInventoryUpdate = async () => {
+  });
+  
+  // Updated broadcast function
+  const broadcastInventoryUpdate = async () => {
     try {
-        const Medicine = require('./Models/medicine').Medicine;
-        const medicines = await Medicine.find();
-        const payload = JSON.stringify({ type: 'inventory_update', data: medicines });
-
-        wss.clients.forEach(client => {
-            if (client.readyState === WebSocket.OPEN) {
-                client.send(payload);
-            }
-        });
+      const Medicine = require('./Models/medicine').Medicine;
+      const medicines = await Medicine.find().sort({ name: 1 });
+      console.log('Broadcasting to', connectedClients.size, 'clients');
+      io.emit('inventory_update', medicines);
+      return true;
     } catch (error) {
-        console.error('Error broadcasting inventory update:', error);
+      console.error('Broadcast error:', error);
+      return false;
     }
-};
-
-// Middleware
-app.use(cors({ origin: "*" }));
-app.use(express.json());
-
-// Attach WebSocket Broadcast Function to Request
-app.use((req, res, next) => {
+  };
+  
+  // Middleware to attach broadcast function
+  app.use((req, res, next) => {
     req.broadcastInventoryUpdate = broadcastInventoryUpdate;
     next();
 });
 
-// ✅ Fix: Ensure WebSocket Updates on Inventory Change
-app.post('/api/update-inventory', async (req, res) => {
-    await broadcastInventoryUpdate();
-    res.status(200).json({ message: "Inventory updated" });
-});
+// Middleware
+app.use(cors({ 
+    origin: "http://localhost:5173",
+    methods: ['GET', 'POST', 'PATCH', 'DELETE']
+}));
+app.use(express.json());
 
-// Default Route for `/`
+
+// Routes
 app.get('/', (req, res) => {
     res.send('Welcome to the Inventory Management API');
 });
@@ -81,49 +89,48 @@ app.get('/', (req, res) => {
 app.post('/api/receipt/login', async (req, res) => {
     try {
         const { username, password } = req.body;
-
-        // Find user in the database
         const user = await User.findOne({ username });
 
-        if (!user) {
+        if (!user || user.password !== password) {
             return res.status(401).json({ message: "Invalid credentials" });
         }
 
-        // Directly compare passwords (⚠️ Not recommended for production)
-        if (user.password !== password) {
-            return res.status(401).json({ message: "Invalid credentials" });
-        }
-
-        // Generate JWT Token
-        const token = jwt.sign({ id: user._id, username: user.username }, secretKey, { expiresIn: "1h" });
-
+        const token = jwt.sign(
+            { id: user._id, username: user.username }, 
+            secretKey, 
+            { expiresIn: "5m" }
+        );
+        
         res.json({ token, message: "Login successful" });
     } catch (error) {
-        console.error("Login Error:", error);
+        logger.error("Login Error:", error);
         res.status(500).json({ message: "Server error" });
     }
 });
 
-// Use Routers
+// Router middleware
 app.use('/api/medicine', medicineRouter);
 app.use('/api/sms', smsRouter);
+app.use('/api/receipt', receiptRouter);
 
-// Error Handling Middleware
+// Error handling middleware
 const errorHandler = (err, req, res, next) => {
     logger.error(err.stack);
     res.status(500).json({ error: "Something went wrong!" });
 };
 app.use(errorHandler);
 
-// Start the Server
+// Server startup
 const start = async () => {
     try {
         await connectDB();
         server.listen(PORT, () => {
-            logger.info(`Server running on port ${PORT}...`);
+            logger.info(`Server running on port ${PORT}`);
+            logger.info('Socket.IO server initialized');
         });
     } catch (error) {
-        logger.error("Error starting server: ", error);
+        logger.error("Error starting server:", error);
+        process.exit(1);
     }
 };
 
