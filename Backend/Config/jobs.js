@@ -8,7 +8,7 @@ const nodemailer = require("nodemailer");
 const transporter = nodemailer.createTransport({
   service: "gmail",
   auth: {
-    user: process.env.EMAIL_USER, // Your email
+    user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASS  // App password
   }
 });
@@ -16,16 +16,15 @@ const transporter = nodemailer.createTransport({
 // Standard doctor working slots (9AM-12PM, 2PM-5PM)
 const defaultSlots = ["09:00-10:00", "10:00-11:00", "11:00-12:00", "12:00-1:00", "2:00-3:00", "3:00-4:00", "4:00-5:00"];
 
-// Helper function to get the date for the day after tomorrow
 const getDayAfterTomorrow = () => {
   const date = new Date();
   date.setDate(date.getDate() + 2); // Move forward by 2 days
-  date.setHours(0, 0, 0, 0); // Normalize time
+  date.setHours(0, 0, 0, 0);
   return date;
 };
 
 // CRON job scheduled at 5 PM every day
-cron.schedule("37 23 * * *" , async () => {
+cron.schedule("0 17 * * *" , async () => {
   try {
     console.log("Sending appointment schedules to doctors...");
 
