@@ -180,9 +180,6 @@ const cancel = async (data) => {
     }
 }
 
-<<<<<<< HEAD
-module.exports = { register, book, confirm, cancel }; // Export register and book functions
-=======
 // Handle unknown SMS
 const guide = async (data) => {
     try {
@@ -215,4 +212,3 @@ const guide = async (data) => {
     }
 }
 module.exports = { register, book, confirm, cancel, guide }; // Export register and book functions
->>>>>>> v1.0

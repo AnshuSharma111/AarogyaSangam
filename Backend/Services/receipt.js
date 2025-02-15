@@ -14,14 +14,10 @@ const otpStorage = {};
 const checkMedicineAvailability = async (req, res) => {
     try {
         // Format of data = { medicines: [{name: name, quantity: qty}, {name: name, quantity: qty}, ...], recepient: recepient }
-<<<<<<< HEAD
-        const{ medicines, recipient } = req.body; // Extract medicines from the request
-=======
         let { medicines, recipient } = req.body; // Extract medicines from the request
 
         // Add country code +91 to recipient phone number
         recipient = "+91" + recipient;
->>>>>>> v1.0
 
         if (!medicines || !recipient) {
             console.log("Medicines and recipient are not provided");
@@ -31,14 +27,11 @@ const checkMedicineAvailability = async (req, res) => {
 
         const unavailableItems = [];
 
-<<<<<<< HEAD
-=======
         // lowercase all medicine names
         for (let med of medicines) {
             med.name = med.name.toLowerCase();
         }
 
->>>>>>> v1.0
         for (const item of medicines) {
             const medicine = await Medicine.findOne({ name: item.name });
 
@@ -73,14 +66,10 @@ const checkMedicineAvailability = async (req, res) => {
 
 const verifyOTP = async (req, res) => {
     try {
-<<<<<<< HEAD
-        const { vendorname, recipient, otp, medicines } = req.body;
-=======
         let { vendorname, recipient, otp, medicines } = req.body;
 
         // Add country code to recipient
         recipient = "+91" + recipient;
->>>>>>> v1.0
 
         console.log("Received request to verify OTP. Processing...");
 
