@@ -4,7 +4,7 @@
 
 ### 1️⃣ Clone the Repository
 ```sh
-git clone <repository-url>
+git clone https://github.com/AnshuSharma111/AarogyaSangam.git
 cd AarogyaSangam
 ```
 
