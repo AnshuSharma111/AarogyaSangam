@@ -240,12 +240,12 @@ const ReceiptForm = () => {
         doc.setFont("helvetica", "bold");
         doc.setFontSize(20);
         doc.setTextColor(0, 0, 128);
-        doc.text("Medical Receipt", 20, 20);
+        doc.text("Aarogya Sanagam Medical Receipt", 20, 20);
 
         doc.setFontSize(12);
         doc.setTextColor(0, 0, 0);
         doc.text(`Receipt Number: ${receiptNumber}`, 20, 30);
-        doc.text(`User ID: ${username}`, 150, 30);
+        doc.text(`Chemist ID: ${username}`, 150, 30);
 
         doc.setFontSize(12);
         doc.text(`Customer Name: ${customerDetails.customerName}`, 20, 50);

@@ -25,7 +25,7 @@ const getDayAfterTomorrow = () => {
 };
 
 // CRON job scheduled at 5 PM every day
-cron.schedule("0 17 * * *" , async () => {
+cron.schedule("37 23 * * *" , async () => {
   try {
     console.log("Sending appointment schedules to doctors...");
 
@@ -94,7 +94,7 @@ cron.schedule("0 17 * * *" , async () => {
     const yesterday = new Date();
     yesterday.setDate(yesterday.getDate() - 1);
     yesterday.setHours(0, 0, 0, 0);
-    
+
     await Appointment.deleteMany({ date: { $lte: yesterday } });
     console.log("Old appointments deleted!");
 
