@@ -4,7 +4,7 @@
 
 ### 1️⃣ Clone the Repository
 ```sh
-git clone <repository-url>
+git clone https://github.com/AnshuSharma111/AarogyaSangam.git
 cd AarogyaSangam
 ```
 
@@ -149,8 +149,13 @@ Since we are in the development phase, we need to expose our local server:
 
 ---
 
-## 🎥 Demonstration Video
-Watch the demonstration video of Aarogya Sangam here: [Aarogya Sangam Demo](https://drive.google.com/file/d/1xTAOtWD2nq7S51qytrxtnYRSgHErwOtI/view?usp=sharing)
+## 📽️ Demonstration Video
+Watch the demonstration video of Aarogya Sangam here: [Demo Video](https://drive.google.com/file/d/1xTAOtWD2nq7S51qytrxtnYRSgHErwOtI/view?usp=sharing)
+
+---
+
+## 📜 Aarogya Sangam White Paper
+Read the official white paper here: [Aarogya Sangam White Paper](https://github.com/AnshuSharma111/AarogyaSangam/blob/main/Aarogya%20Sangam%20White%20Paper.pdf)
 
 ---
 
