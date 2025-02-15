@@ -1,18 +1,3 @@
-<<<<<<< HEAD
-const Appointment = require('../Models/appointment');
-
-const getAllAppointments = async (req, res) => {
-    try {
-        console.log("Trying to get all appointments");
-
-        const appointments = await Appointment.find();
-
-        console.log("Appointments fetched successfully");
-        return res.status(200).json({ success: true, data: appointments });
-    }
-    catch (error) {
-        console.log(`An error occurred: ${error}`);
-=======
 const { Appointment } = require("../Models/appointment");
 
 const getAllAppointments = async (req, res) => {
@@ -27,13 +12,8 @@ const getAllAppointments = async (req, res) => {
         return res.status(200).json({ success: true, data: appointments });
     } catch (error) {
         console.error(`Error fetching appointments: ${error}`);
->>>>>>> v1.0
         return res.status(500).json({ success: false, error: "Internal Server Error" });
     }
 };
 
-<<<<<<< HEAD
 module.exports = { getAllAppointments };
-=======
-module.exports = { getAllAppointments };
->>>>>>> v1.0
