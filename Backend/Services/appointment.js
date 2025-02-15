@@ -2,8 +2,14 @@ const Patient = require('../Models/patient').Patient; // Import patient model
 const Doctor = require('../Models/doctor').Doctor; // Import doctor model
 const Appointment = require('../Models/appointment').Appointment; // Import appointment model
 const smsEvents = require('../eventBus'); // Import event bus
-const { generateResponse } = require("./genai.mjs"); // Import function to prompt model
-require("./genai.mjs"); // Import Model
+
+
+let genai;
+
+(async () => {
+    genai = await import('./genai.mjs');
+})();
+
 
 const register = async (data) => {
     try {
@@ -180,7 +186,6 @@ const cancel = async (data) => {
     }
 }
 
-// Handle unknown SMS
 const guide = async (data) => {
     try {
         const { content, from } = data;
@@ -189,26 +194,35 @@ const guide = async (data) => {
 
         if (!content || !from) {
             console.log("No content or from!");
-            smsEvents.emit("error", { errorCode: -1, user: from }); // SET LATER
+            smsEvents.emit("error", { errorCode: -1, user: from });
+            return;
         }
 
         console.log("Generating response to unknown SMS...");
 
-        const prompt = "You are a chatbot that provides guidance to users trying to use an application booking system. The user needs to press 0 to book appointment, 1 to confirm appointment and 2 to cancel it. The user has sent content " + content + ". Guide them accordingly.";
+        if (!genai) {
+            console.log("genai module not loaded yet!");
+            smsEvents.emit("error", { errorCode: -1, user: from });
+            return;
+        }
+
+        const { generateResponse } = genai; // Extract the function
+        const prompt = `You are a chatbot that provides guidance... The user sent: ${content}. Guide them accordingly.`;
 
         const response = await generateResponse(prompt);
 
         if (!response) {
             console.log("Could not generate response!");
-            smsEvents.emit("error", { errorCode: -1, user: from }); // SET LATER
+            smsEvents.emit("error", { errorCode: -1, user: from });
+            return;
         }
 
-        console.log("Generated response " + response);
-
+        console.log("Generated response: " + response);
         smsEvents.emit("sendSMS", { content: response, to: from });
     } catch (error) {
-        console.log(`An error occurred: ${error}`); // log error
-        smsEvents.emit("error", { errorCode: -1, user: from }); // SET LATER
+        console.log(`An error occurred: ${error}`);
+        smsEvents.emit("error", { errorCode: -1, user: from });
     }
-}
+};
+
 module.exports = { register, book, confirm, cancel, guide }; // Export register and book functions
