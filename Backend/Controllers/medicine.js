@@ -33,12 +33,23 @@ const getAllMedicine = async (req, res) => {
 // POST endpoint
 const addMedicine = async (req, res) => {
     try {
-        const { name, quantity, batchno, expiry } = req.body;
+        let { name, quantity, batchno, expiry } = req.body;
+        name = name.toLowerCase();
+
         if (!name || !quantity || !batchno || !expiry) {
             return res.status(400).json({ success: false, message: "Invalid Details!" });
         }
         const newMedicine = new Medicine({ name: name, quantity: quantity, batchno: batchno, expiry: expiry });
         await newMedicine.save();
+        
+        // Broadcast update after successful save
+        try {
+            await req.broadcastInventoryUpdate();
+        } catch (broadcastError) {
+            console.error('Error broadcasting inventory update:', broadcastError);
+            // Continue with the response even if broadcast fails
+        }
+
         return res.status(201).json({ success: true, message: "Medicine Added!", id: newMedicine._id });
     }
     catch (err) {
@@ -57,6 +68,15 @@ const deleteMedicine = async (req, res) => {
         if (!med) {
             return res.status(404).json({ success: false, message: `No Medicine with id: ${id} found` });
         }
+
+        // Broadcast update after successful deletion
+        try {
+            await req.broadcastInventoryUpdate();
+        } catch (broadcastError) {
+            console.error('Error broadcasting inventory update:', broadcastError);
+            // Continue with the response even if broadcast fails
+        }
+
         return res.status(200).json({ success: true, message: "Medicine Deleted!" });
     }
     catch (err) {
@@ -72,10 +92,24 @@ const updateMedicine = async (req, res) => {
         return res.status(400).json({ success: false, message: "Invalid Details!" });
     }
     try {
-        const med = await Medicine.findByIdAndUpdate(id , { name: name, quantity: quantity, batchno: batchno, expiry: expiry });
+        const med = await Medicine.findByIdAndUpdate(
+            id, 
+            { name: name, quantity: quantity, batchno: batchno, expiry: expiry },
+            { new: true } // Return updated document
+        );
+        
         if (!med) {
             return res.status(404).json({ success: false, message: "No Medicine Found!" });
         }
+
+        // Broadcast update after successful update
+        try {
+            await req.broadcastInventoryUpdate();
+        } catch (broadcastError) {
+            console.error('Error broadcasting inventory update:', broadcastError);
+            // Continue with the response even if broadcast fails
+        }
+
         return res.status(200).json({ success: true, message: "Medicine Updated!" });
     }
     catch (err) {
@@ -83,5 +117,10 @@ const updateMedicine = async (req, res) => {
     }
 };
 
-// exxport all functions
-module.exports = { getOneMedicine, getAllMedicine, addMedicine, deleteMedicine, updateMedicine };
+module.exports = { 
+    getOneMedicine, 
+    getAllMedicine, 
+    addMedicine, 
+    deleteMedicine, 
+    updateMedicine 
+};

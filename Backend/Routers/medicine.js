@@ -1,19 +1,44 @@
 const express = require('express');
-
 const router = express.Router();
-
-// get medicine api controller
 const medicineController = require('../Controllers/medicine');
 
-// set up routes
 router.route('/:id')
-.get(medicineController.getOneMedicine)
-.delete(medicineController.deleteMedicine)
-.patch(medicineController.updateMedicine);
+  .get(medicineController.getOneMedicine)
+  .delete(async (req, res) => {
+    try {
+      await medicineController.deleteMedicine(req, res);
+      if (res.statusCode === 200) {
+        await req.broadcastInventoryUpdate();
+      }
+    } catch (error) {
+      console.error('Error in delete route:', error);
+      res.status(500).json({ success: false, error: error.message });
+    }
+  })
+  .patch(async (req, res) => {
+    try {
+      await medicineController.updateMedicine(req, res);
+      if (res.statusCode === 200) {
+        await req.broadcastInventoryUpdate();
+      }
+    } catch (error) {
+      console.error('Error in update route:', error);
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
 
 router.route('/')
-.get(medicineController.getAllMedicine)
-.post(medicineController.addMedicine)
+  .get(medicineController.getAllMedicine)
+  .post(async (req, res) => {
+    try {
+      await medicineController.addMedicine(req, res);
+      if (res.statusCode === 200) {
+        await req.broadcastInventoryUpdate();
+      }
+    } catch (error) {
+      console.error('Error in post route:', error);
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
 
-// export router
 module.exports = router;

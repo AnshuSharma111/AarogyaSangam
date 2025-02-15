@@ -26,6 +26,8 @@ const send = async (data) => {
 
         if (!response.ok) {
             console.log("An error occured while sending SMS!"); // Log error
+            console.log(response);
+            return;
         }
 
         console.log("Sent SMS to " + to + " from " + from + " with content: " + content); // Log the message sent
@@ -64,6 +66,8 @@ const receive = async (req, res) => {
     }
     else {
         console.log("Unknown SMS received"); // Log the request
+
+        smsEvents.emit("guide", { content, from });
 
         return res.status(200).json({ success: true, message: "Unknown SMS received" });
     }
